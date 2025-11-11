@@ -1,0 +1,29 @@
+apiVersion: v1
+entries:
+  agent:
+  - apiVersion: v2
+    appVersion: 0.0.63
+    created: "2025-11-11T17:43:49.930508682Z"
+    description: Thand Agent - Open-source agent for AI-ready privilege access management
+      (PAM) and just-in-time access (JIT) to cloud infrastructure, SaaS applications
+      and local systems.
+    digest: bbd8852d4469a2680cfe680c676d54441ab097860b764cc39a12e8bf257bf016
+    home: https://thand.io
+    keywords:
+    - access-management
+    - jit-access
+    - pam
+    - privilege-access
+    - kubernetes
+    - rbac
+    maintainers:
+    - name: Thand
+      url: https://thand.io
+    name: agent
+    sources:
+    - https://github.com/thand-io/agent
+    type: application
+    urls:
+    - https://github.com/thand-io/helm-charts/releases/download/agent-0.0.3/agent-0.0.3.tgz
+    version: 0.0.3
+generated: "2025-11-11T17:43:49.930519154Z"

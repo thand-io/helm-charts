@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agent.fullname" . }}
+  namespace: {{ include "agent.namespace" . }}
+  labels:
+    {{- include "agent.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "agent.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "agent.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["./agent", "server", "--config", "/app/config/config.yaml"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.config.server.port }}
+              protocol: TCP
+          env:
+          {{- range .Values.env }}
+          - name: {{ .name }}
+            value: {{ .value | quote }}
+          {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+          - name: config
+            mountPath: /app/config
+            readOnly: true
+          {{- if .Values.roles.enabled }}
+          - name: roles-config
+            mountPath: /app/config/roles
+            readOnly: true
+          {{- end }}
+          {{- if .Values.providers.enabled }}
+          - name: providers-config
+            mountPath: /app/config/providers
+            readOnly: true
+          {{- end }}
+          {{- if .Values.workflows.enabled }}
+          - name: workflows-config
+            mountPath: /app/config/workflows
+            readOnly: true
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "agent.fullname" . }}-config
+      {{- if .Values.roles.enabled }}
+      - name: roles-config
+        secret:
+          secretName: {{ .Values.roles.existingSecret | default (printf "%s-roles" (include "agent.fullname" .)) }}
+          defaultMode: 0644
+      {{- end }}
+      {{- if .Values.providers.enabled }}
+      - name: providers-config
+        secret:
+          secretName: {{ .Values.providers.existingSecret | default (printf "%s-providers" (include "agent.fullname" .)) }}
+          defaultMode: 0644
+      {{- end }}
+      {{- if .Values.workflows.enabled }}
+      - name: workflows-config
+        secret:
+          secretName: {{ .Values.workflows.existingSecret | default (printf "%s-workflows" (include "agent.fullname" .)) }}
+          defaultMode: 0644
+      {{- end }}
+      {{- with .Values.volumes }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+

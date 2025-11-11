@@ -1,0 +1,267 @@
+# Default values for Thand Agent
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Namespace where the agent will be deployed
+namespaceOverride: ""
+
+# Number of replicas for the deployment
+replicaCount: 1
+
+# Container image configuration
+image:
+  repository: ghcr.io/thand-io/agent
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion
+  tag: ""
+
+# Image pull secrets for private registries
+imagePullSecrets: []
+
+# Override chart name
+nameOverride: ""
+fullnameOverride: ""
+
+# Service account configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# RBAC configuration
+rbac:
+  # Specifies whether RBAC resources should be created
+  create: true
+  # Rules for the ClusterRole
+  rules:
+    # RBAC permissions for managing roles and bindings
+    - apiGroups: ["rbac.authorization.k8s.io"]
+      resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+      verbs: ["get", "list", "create", "update", "patch", "delete"]
+    # Namespace access
+    - apiGroups: [""]
+      resources: ["namespaces"]
+      verbs: ["get", "list"]
+    # Service account access (for user validation)
+    - apiGroups: [""]
+      resources: ["serviceaccounts"]
+      verbs: ["get", "list"]
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Pod security context
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# Container security context
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: http
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: thand-agent.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: thand-agent-tls
+  #    hosts:
+  #      - thand-agent.local
+
+# HTTPRoute configuration (Gateway API)
+httpRoute:
+  enabled: false
+  annotations: {}
+  parentRefs:
+    - name: gateway
+      sectionName: http
+  hostnames:
+    - thand-agent.local
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+
+# Resource limits and requests
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "4Gi"
+    cpu: "1000m"
+
+# Liveness probe configuration
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Readiness probe configuration
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Environment variables
+env:
+  # Log level: debug, info, warn, error
+  - name: THAND_LOG_LEVEL
+    value: "info"
+  # Server port
+  - name: THAND_SERVER_PORT
+    value: "8080"
+  # Paths for configuration
+  - name: THAND_ROLES_PATH
+    value: "/app/config/roles/"
+  - name: THAND_PROVIDERS_PATH
+    value: "/app/config/providers/"
+  - name: THAND_WORKFLOWS_PATH
+    value: "/app/config/workflows/"
+
+# Additional environment variables from secrets or configmaps
+envFrom: []
+# - secretRef:
+#     name: thand-secrets
+# - configMapRef:
+#     name: thand-config
+
+# Thand Agent Configuration
+config:
+  # Main configuration for the agent
+  # This will be mounted as config.yaml
+  server:
+    port: 8080
+    host: "0.0.0.0"
+    health:
+      enabled: true
+      path: "/health"
+    ready:
+      enabled: true
+      path: "/ready"
+  
+  logging:
+    level: "info"
+    format: "json"
+    output: "stdout"
+  
+  providers:
+    kubernetes-cluster:
+      description: Current Kubernetes cluster
+      provider: kubernetes
+      config: {}
+      enabled: true
+  
+  # Additional configuration can be added here
+  # and will be merged into the config.yaml
+
+# Roles configuration
+# Create secrets from files in your repository or provide inline
+roles:
+  # If true, creates a secret from the files specified
+  enabled: true
+  # Mount existing secret instead of creating one
+  existingSecret: ""
+  # Inline role definitions (will be created as secret)
+  files: {}
+    # all.yaml: |
+    #   roles:
+    #     - name: admin
+    #       permissions: ["*"]
+
+# Providers configuration
+# Create secrets from files in your repository or provide inline
+providers:
+  # If true, creates a secret from the files specified
+  enabled: true
+  # Mount existing secret instead of creating one
+  existingSecret: ""
+  # Inline provider definitions (will be created as secret)
+  files: {}
+    # all.yaml: |
+    #   providers:
+    #     - name: kubernetes
+    #       type: kubernetes
+
+# Workflows configuration
+# Create secrets from files in your repository or provide inline
+workflows:
+  # If true, creates a secret from the files specified
+  enabled: true
+  # Mount existing secret instead of creating one
+  existingSecret: ""
+  # Inline workflow definitions (will be created as secret)
+  files: {}
+    # all.yaml: |
+    #   workflows:
+    #     - name: approval
+    #       steps: []
+
+# Additional volumes
+volumes: []
+# - name: custom-config
+#   configMap:
+#     name: my-config
+
+# Additional volume mounts
+volumeMounts: []
+# - name: custom-config
+#   mountPath: /custom
+#   readOnly: true
+

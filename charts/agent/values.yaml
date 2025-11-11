@@ -7,6 +7,7 @@ namespaceOverride: ""
 
 # Hostname for external access
 hostname: "thand-agent.local"
+loginEndpoint: "http://{{ .Values.hostname }}"
 
 # Number of replicas for the deployment
 replicaCount: 1
@@ -166,7 +167,7 @@ affinity: {}
 env:
   # Log level: debug, info, warn, error
   - name: THAND_LOGIN_ENDPOINT
-    value: "{{ .Values.hostname }}"
+    value: "http://{{ .Values.hostname }}"
   - name: THAND_LOG_LEVEL
     value: "info"
   # Server port
@@ -215,7 +216,7 @@ config:
   # This will be mounted as config.yaml
 
   login:
-    endpoint: "{{ .Values.hostname }}"
+    endpoint: "http://{{ .Values.hostname }}"
     base: "/"
 
   server:

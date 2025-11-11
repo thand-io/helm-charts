@@ -6,13 +6,13 @@
 namespaceOverride: ""
 
 # Hostname for external access
-hostname: "thand-agent.local"
+hostname: "localhost"
 # Full URL for login endpoint. This is the external facing URL
 # of your service. That'll be used in the agent configuration.
 # thand agent --login-server=<login-endpoint>
 # By default, this uses http:// with the hostname above, but you can override
 # it completely for https:// or a different domain
-loginEndpoint: "http://thand-agent.local"
+loginEndpoint: "http://localhost:8081"
 
 # Number of replicas for the deployment
 replicaCount: 1
@@ -49,18 +49,12 @@ rbac:
   create: true
   # Rules for the ClusterRole
   rules:
-    # RBAC permissions for managing roles and bindings
-    - apiGroups: ["rbac.authorization.k8s.io"]
-      resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
-      verbs: ["get", "list", "create", "update", "patch", "delete"]
-    # Namespace access
-    - apiGroups: [""]
-      resources: ["namespaces"]
-      verbs: ["get", "list"]
-    # Service account access (for user validation)
-    - apiGroups: [""]
-      resources: ["serviceaccounts"]
-      verbs: ["get", "list"]
+    # Grant full permissions across all resources for user authorization management
+    # This is necessary for the agent to create roles with any permissions.
+    # You can restrict these permissions as needed.
+    - apiGroups: ["*"]
+      resources: ["*"]
+      verbs: ["*"]
 
 # Pod annotations
 podAnnotations: {}

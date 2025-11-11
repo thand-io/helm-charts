@@ -57,7 +57,7 @@ WARNING: Workflows configuration is not enabled!
 {{- end }}
 
 For more information:
-  - Documentation: https://thand.io
+  - Documentation: https://docs.thand.io
   - GitHub: https://github.com/thand-io/agent
   - Issues: https://github.com/thand-io/agent/issues
 

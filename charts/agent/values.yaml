@@ -218,6 +218,8 @@ config:
     #   api_key: "" # Temporal API Key for Temporal Cloud
   
   providers:
+    # path: /app/config/providers/
+    # Provide a default Kubernetes provider
     kubernetes-cluster:
       description: Current Kubernetes cluster
       provider: kubernetes
@@ -245,9 +247,9 @@ roles:
   # Inline role definitions (will be created as secret)
   files: {}
     # all.yaml: |
+    #   version: "1.0"
     #   roles:
-    #     - name: admin
-    #       permissions: ["*"]
+    #     see: https://docs.thand.io/configuration/roles/
 
 # Providers secrets configuration
 # Create secrets from files in your repository or provide inline
@@ -259,9 +261,9 @@ providers:
   # Inline provider definitions (will be created as secret)
   files: {}
     # all.yaml: |
+    #   version: "1.0"
     #   providers:
-    #     - name: kubernetes
-    #       type: kubernetes
+    #     see: https://docs.thand.io/configuration/providers/
 
 # Workflows secrets configuration
 # Create secrets from files in your repository or provide inline
@@ -273,9 +275,9 @@ workflows:
   # Inline workflow definitions (will be created as secret)
   files: {}
     # all.yaml: |
+    #   version: "1.0"
     #   workflows:
-    #     - name: approval
-    #       steps: []
+    #     see: https://docs.thand.io/configuration/workflows/
 
 # Additional volumes
 volumes: []

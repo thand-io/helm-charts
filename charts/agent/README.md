@@ -284,10 +284,20 @@ helm install thand-agent thand/agent -f custom-values.yaml --namespace thand-sys
 If you want to manage secrets externally:
 
 ```bash
-# Create secrets first
-kubectl create secret generic thand-roles --from-file=all.yaml=./config/roles/all.yaml -n thand-system
-kubectl create secret generic thand-providers --from-file=all.yaml=./config/providers/all.yaml -n thand-system
-kubectl create secret generic thand-workflows --from-file=all.yaml=./config/workflows/all.yaml -n thand-system
+# Create secrets first:
+kubectl create secret generic thand-agent-roles --from-file=all.yaml=./config/roles/all.yaml -n thand-system
+kubectl create secret generic thand-agent-providers --from-file=all.yaml=./config/providers/all.yaml -n thand-system
+kubectl create secret generic thand-agent-workflows --from-file=all.yaml=./config/workflows/all.yaml -n thand-system
+
+# Update your secrets:
+kubectl create secret generic thand-agent-roles --from-file=all.yaml=./config/roles/all.yaml -n thand-system --dry-run=client -o yaml | kubectl replace -f -
+kubectl create secret generic thand-agent-providers --from-file=all.yaml=./config/providers/all.yaml -n thand-system --dry-run=client -o yaml | kubectl replace -f -
+kubectl create secret generic thand-agent-workflows --from-file=all.yaml=./config/workflows/all.yaml -n thand-system --dry-run=client -o yaml | kubectl replace -f -
+
+# Then post-update the chart with existing secrets
+# You'll need to restart the pods to pick up the new secrets
+kubectl rollout restart deployment thand-agent -n thand-system
+
 ```
 
 Then install with:

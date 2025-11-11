@@ -10,6 +10,8 @@ hostname: "thand-agent.local"
 # Full URL for login endpoint. This is the external facing URL
 # of your service. That'll be used in the agent configuration.
 # thand agent --login-server=<login-endpoint>
+# By default, this uses http:// with the hostname above, but you can override
+# it completely for https:// or a different domain
 loginEndpoint: "http://thand-agent.local"
 
 # Number of replicas for the deployment
@@ -94,14 +96,14 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
-    - host: "{{ .Values.hostname }}"
+    - host: thand-agent.local
       paths:
         - path: /
           pathType: Prefix
   tls: []
   #  - secretName: thand-agent-tls
   #    hosts:
-  #      - "{{ .Values.hostname }}"
+  #      - thand-agent.local
 
 # HTTPRoute configuration (Gateway API)
 httpRoute:
@@ -111,7 +113,7 @@ httpRoute:
     - name: gateway
       sectionName: http
   hostnames:
-    - "{{ .Values.hostname }}"
+    - thand-agent.local
   rules:
     - matches:
       - path:
@@ -169,8 +171,6 @@ affinity: {}
 # Environment variables
 env:
   # Log level: debug, info, warn, error
-  - name: THAND_LOGIN_ENDPOINT
-    value: "{{ .Values.loginEndpoint }}"
   - name: THAND_LOG_LEVEL
     value: "info"
   # Server port
@@ -217,10 +217,6 @@ secrets:
 config:
   # Main configuration for the agent
   # This will be mounted as config.yaml
-
-  login:
-    endpoint: "{{ .Values.loginEndpoint }}"
-    base: "/"
 
   server:
     port: 8080

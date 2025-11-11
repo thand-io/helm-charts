@@ -99,6 +99,12 @@ Create configuration with auto-populated Temporal settings
   {{- end }}
   {{- $_ := set $services "temporal" $temporalConfig }}
 {{- end }}
+{{- /* Process template values in login.endpoint */ -}}
+{{- if hasKey $config "login" }}
+  {{- if hasKey $config.login "endpoint" }}
+    {{- $_ := set $config.login "endpoint" (tpl $config.login.endpoint .) }}
+  {{- end }}
+{{- end }}
 {{- toYaml $config }}
 {{- end }}
 

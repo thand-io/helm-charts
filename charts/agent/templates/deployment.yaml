@@ -48,9 +48,13 @@ spec:
               containerPort: {{ .Values.config.server.port }}
               protocol: TCP
           env:
+          {{- if .Values.loginEndpoint }}
+          - name: THAND_LOGIN_ENDPOINT
+            value: {{ .Values.loginEndpoint | quote }}
+          {{- end }}
           {{- range .Values.env }}
           - name: {{ .name }}
-            value: {{ .value | quote }}
+            value: {{ tpl .value $ | quote }}
           {{- end }}
           {{- if .Values.secrets.enabled }}
           {{- $secretData := .Values.secrets.data | default dict }}

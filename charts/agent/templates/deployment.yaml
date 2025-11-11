@@ -52,6 +52,27 @@ spec:
           - name: {{ .name }}
             value: {{ .value | quote }}
           {{- end }}
+          {{- if .Values.secrets.enabled }}
+          {{- $secretData := .Values.secrets.data | default dict }}
+          {{- if .Values.secrets.generate.enabled }}
+            {{- range $key := .Values.secrets.generate.keys }}
+              {{- if not (hasKey $secretData $key) }}
+          - name: {{ $key }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $.Values.secrets.existingSecret | default (printf "%s-secrets" (include "agent.fullname" $)) }}
+                key: {{ $key }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- range $key, $value := $secretData }}
+          - name: {{ $key }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $.Values.secrets.existingSecret | default (printf "%s-secrets" (include "agent.fullname" $)) }}
+                key: {{ $key }}
+          {{- end }}
+          {{- end }}
           {{- with .Values.envFrom }}
           envFrom:
             {{- toYaml . | nindent 12 }}

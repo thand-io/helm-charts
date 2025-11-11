@@ -68,3 +68,37 @@ Create the namespace to use
 {{- default .Release.Namespace .Values.namespaceOverride }}
 {{- end }}
 
+{{/*
+Create configuration with auto-populated Temporal settings
+*/}}
+{{- define "agent.config" -}}
+{{- $config := deepCopy .Values.config }}
+{{- if .Values.temporal.enabled }}
+  {{- if not (hasKey $config "services") }}
+    {{- $_ := set $config "services" (dict) }}
+  {{- end }}
+  {{- $services := $config.services }}
+  {{- if not (kindIs "map" $services) }}
+    {{- $services = dict }}
+    {{- $_ := set $config "services" $services }}
+  {{- end }}
+  {{- $temporalConfig := dict }}
+  {{- if hasKey $services "temporal" }}
+    {{- if kindIs "map" $services.temporal }}
+      {{- $temporalConfig = $services.temporal }}
+    {{- end }}
+  {{- end }}
+  {{- if not (hasKey $temporalConfig "host") }}
+    {{- $_ := set $temporalConfig "host" (printf "temporal-frontend.%s.svc.cluster.local" .Release.Namespace) }}
+  {{- end }}
+  {{- if not (hasKey $temporalConfig "port") }}
+    {{- $_ := set $temporalConfig "port" 7233 }}
+  {{- end }}
+  {{- if not (hasKey $temporalConfig "namespace") }}
+    {{- $_ := set $temporalConfig "namespace" "default" }}
+  {{- end }}
+  {{- $_ := set $services "temporal" $temporalConfig }}
+{{- end }}
+{{- toYaml $config }}
+{{- end }}
+

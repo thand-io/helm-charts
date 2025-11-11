@@ -201,6 +201,22 @@ config:
     format: "json"
     output: "stdout"
   
+  services:
+    # Optional Temporal configuration
+    # When temporal.enabled=true, these values are automatically populated:
+    # temporal:
+    #   host: temporal-frontend.<namespace>.svc.cluster.local
+    #   port: 7233  
+    #   namespace: default
+    # 
+    # Override these for external Temporal services:
+    # temporal:
+    #   host: "us-central1.gcp.api.temporal.io"
+    #   port: 7233
+    #   namespace: "my-temporal-namespace"
+    #   mtls_pem: "" # Path to mTLS PEM file if required
+    #   api_key: "" # Temporal API Key for Temporal Cloud
+  
   providers:
     kubernetes-cluster:
       description: Current Kubernetes cluster
@@ -264,6 +280,22 @@ workflows:
 # Additional volumes
 volumes: []
 # - name: custom-config
+
+# Temporal dependency configuration
+# Set enabled: true to install Temporal as a dependency
+# When enabled, config.services.temporal will be automatically populated with:
+# - host: temporal-frontend.<namespace>.svc.cluster.local
+# - port: 7233
+# - namespace: default
+temporal:
+  enabled: false
+  # Temporal chart values can be overridden here when enabled: true
+  # server:
+  #   replicaCount: 1
+  # cassandra:
+  #   enabled: true
+  # elasticsearch:
+  #   enabled: false
 #   configMap:
 #     name: my-config
 

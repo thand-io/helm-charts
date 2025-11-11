@@ -136,6 +136,72 @@ The following table lists the configurable parameters of the Thand Agent chart a
 | `workflows.existingSecret` | Use existing secret for workflows | `""` |
 | `workflows.files` | Inline workflow definitions | `{}` |
 
+### Temporal Configuration (Optional)
+
+Thand Agent supports optional integration with Temporal for workflow orchestration. You can either use an external Temporal service or install Temporal as a chart dependency.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `temporal.enabled` | Install Temporal as dependency | `false` |
+| `config.services.temporal.host` | Temporal server host | `""` |
+| `config.services.temporal.port` | Temporal server port | `7233` |
+| `config.services.temporal.namespace` | Temporal namespace | `"default"` |
+| `config.services.temporal.mtls_pem` | Path to mTLS PEM file | `""` |
+| `config.services.temporal.api_key` | Temporal API key | `""` |
+
+#### Option 1: External Temporal Service
+
+To connect to an external Temporal service (like Temporal Cloud):
+
+```yaml
+config:
+  services:
+    temporal:
+      host: "us-central1.gcp.api.temporal.io"
+      port: 7233
+      namespace: "my-namespace"
+      api_key: "your-temporal-api-key"
+
+temporal:
+  enabled: false  # Don't install Temporal chart
+```
+
+#### Option 2: Install Temporal as Dependency
+
+To install Temporal alongside the agent, simply enable it. The Temporal service configuration will be automatically populated:
+
+```yaml
+temporal:
+  enabled: true
+  server:
+    replicaCount: 1
+
+# config.services.temporal is automatically populated with:
+# host: temporal-frontend.<namespace>.svc.cluster.local
+# port: 7233
+# namespace: default
+```
+
+You can override the auto-populated values if needed:
+
+```yaml
+temporal:
+  enabled: true
+
+config:
+  services:
+    temporal:
+      namespace: "my-custom-namespace"
+      # host and port are still auto-populated
+```
+
+Then install with dependency update:
+
+```bash
+helm dependency update charts/agent
+helm install thand-agent thand/agent -f temporal-values.yaml
+```
+
 ## Examples
 
 ### Basic Installation
@@ -238,6 +304,56 @@ providers:
 workflows:
   enabled: true
   existingSecret: thand-workflows
+```
+
+### With Temporal Integration
+
+Create a `temporal-values.yaml` for external Temporal service:
+
+```yaml
+config:
+  services:
+    temporal:
+      host: "us-central1.gcp.api.temporal.io"
+      port: 7233
+      namespace: "my-temporal-namespace"
+      api_key: "your-api-key"
+
+temporal:
+  enabled: false
+```
+
+Or to install Temporal as a dependency:
+
+```yaml
+temporal:
+  enabled: true
+  server:
+    replicaCount: 1
+  cassandra:
+    enabled: true
+    config:
+      cluster_size: 1
+
+config:
+  services:
+    temporal:
+      host: "temporal-frontend.default.svc.cluster.local"
+      port: 7233
+      namespace: "default"
+```
+
+Install with Temporal:
+
+```bash
+# Update dependencies first if using temporal.enabled: true
+helm dependency update charts/agent
+
+# Install with Temporal configuration
+helm install thand-agent thand/agent \
+  --namespace thand-system \
+  --create-namespace \
+  -f temporal-values.yaml
 ```
 
 ## Upgrading

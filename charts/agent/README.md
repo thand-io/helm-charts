@@ -16,7 +16,7 @@ Thand Agent - Open-source agent for AI-ready privilege access management (PAM) a
 ### Add Helm Repository
 
 ```bash
-helm repo add thand https://thand-io.github.io/helm-charts
+helm repo add thand https://helm.thand.io
 helm repo update
 ```
 

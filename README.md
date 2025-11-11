@@ -9,7 +9,7 @@ This repository contains Helm charts for deploying Thand components to Kubernete
 ### Add Helm Repository
 
 ```bash
-helm repo add thand https://thand-io.github.io/helm-charts
+helm repo add thand https://helm.thand.io
 helm repo update
 ```
 

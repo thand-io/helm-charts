@@ -208,10 +208,18 @@ config:
       config: {}
       enabled: true
   
+  # Roles configuration - loaded from secrets
+  roles:
+    path: /app/config/roles/
+  
+  # Workflows configuration - loaded from secrets
+  workflows:
+    path: /app/config/workflows/
+  
   # Additional configuration can be added here
   # and will be merged into the config.yaml
 
-# Roles configuration
+# Roles secrets configuration
 # Create secrets from files in your repository or provide inline
 roles:
   # If true, creates a secret from the files specified
@@ -225,7 +233,7 @@ roles:
     #     - name: admin
     #       permissions: ["*"]
 
-# Providers configuration
+# Providers secrets configuration
 # Create secrets from files in your repository or provide inline
 providers:
   # If true, creates a secret from the files specified
@@ -239,7 +247,7 @@ providers:
     #     - name: kubernetes
     #       type: kubernetes
 
-# Workflows configuration
+# Workflows secrets configuration
 # Create secrets from files in your repository or provide inline
 workflows:
   # If true, creates a secret from the files specified

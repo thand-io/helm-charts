@@ -31,12 +31,16 @@ The Thand Agent is now running with RBAC permissions to manage Kubernetes access
   export POD_NAME=$(kubectl get pods --namespace {{ include "agent.namespace" . }} -l "app.kubernetes.io/name={{ include "agent.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   kubectl --namespace {{ include "agent.namespace" . }} port-forward $POD_NAME 8080:{{ .Values.config.server.port }}
   
-  Then access the agent at: http://127.0.0.1:8080
+  Then access the agent at: {{ .Values.loginEndpoint }} (use this as your login endpoint)
 {{- end }}
 
 4. Health check endpoints:
    - Health: http://localhost:8080/health
    - Ready: http://localhost:8080/ready
+
+5. Login endpoint configuration:
+   - Login Endpoint: {{ .Values.loginEndpoint }}
+   - Use this endpoint when configuring the Thand Agent CLI or connecting clients
 
 {{- if not .Values.roles.enabled }}
 

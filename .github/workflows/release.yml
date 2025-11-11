@@ -31,6 +31,17 @@ jobs:
         with:
           version: v3.14.0
 
+      - name: Lint Helm Charts
+        run: |
+          echo "🔍 Linting all Helm charts..."
+          for chart in charts/*/; do
+            if [ -f "$chart/Chart.yaml" ]; then
+              echo "Linting chart: $chart"
+              helm lint "$chart"
+            fi
+          done
+          echo "✅ All charts passed linting!"
+
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
         env:

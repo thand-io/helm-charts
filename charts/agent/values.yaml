@@ -7,7 +7,10 @@ namespaceOverride: ""
 
 # Hostname for external access
 hostname: "thand-agent.local"
-loginEndpoint: "http://{{ .Values.hostname }}"
+# Full URL for login endpoint. This is the external facing URL
+# of your service. That'll be used in the agent configuration.
+# thand agent --login-server=<login-endpoint>
+loginEndpoint: "http://thand-agent.local"
 
 # Number of replicas for the deployment
 replicaCount: 1
@@ -167,7 +170,7 @@ affinity: {}
 env:
   # Log level: debug, info, warn, error
   - name: THAND_LOGIN_ENDPOINT
-    value: "http://{{ .Values.hostname }}"
+    value: "{{ .Values.loginEndpoint }}"
   - name: THAND_LOG_LEVEL
     value: "info"
   # Server port
@@ -216,7 +219,7 @@ config:
   # This will be mounted as config.yaml
 
   login:
-    endpoint: "http://{{ .Values.hostname }}"
+    endpoint: "{{ .Values.loginEndpoint }}"
     base: "/"
 
   server:

@@ -3,6 +3,37 @@ entries:
   agent:
   - apiVersion: v2
     appVersion: 0.0.152
+    created: "2026-02-12T20:56:40.307957348Z"
+    dependencies:
+    - condition: temporal.enabled
+      name: temporal
+      repository: https://go.temporal.io/helm-charts
+      version: 0.70.0
+    description: Thand Agent - Open-source agent for AI-ready privilege access management
+      (PAM) and just-in-time access (JIT) to cloud infrastructure, SaaS applications
+      and local systems.
+    digest: a014995b9d1c9016580fda811112f028962f6095e73e92c8454f7916da253a58
+    home: https://thand.io
+    icon: https://github.com/thand-io/agent/blob/main/internal/daemon/static/logo.png?raw=true
+    keywords:
+    - access-management
+    - jit-access
+    - pam
+    - privilege-access
+    - kubernetes
+    - rbac
+    maintainers:
+    - name: Thand
+      url: https://thand.io
+    name: agent
+    sources:
+    - https://github.com/thand-io/agent
+    type: application
+    urls:
+    - https://github.com/thand-io/helm-charts/releases/download/agent-0.0.16/agent-0.0.16.tgz
+    version: 0.0.16
+  - apiVersion: v2
+    appVersion: 0.0.152
     created: "2026-02-09T17:43:27.87059155Z"
     dependencies:
     - condition: temporal.enabled
@@ -395,4 +426,4 @@ entries:
     urls:
     - https://github.com/thand-io/helm-charts/releases/download/agent-0.0.3/agent-0.0.3.tgz
     version: 0.0.3
-generated: "2026-02-09T17:43:27.870665417Z"
+generated: "2026-02-12T20:56:40.308093794Z"

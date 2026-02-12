@@ -42,7 +42,7 @@ spec:
           {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default (printf "v%s" .Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["./agent", "server", "--config", "/app/config/config.yaml"]
+          command: ["./thand", "server", "--config", "/app/config/config.yaml"]
           ports:
             - name: http
               containerPort: {{ .Values.config.server.port }}

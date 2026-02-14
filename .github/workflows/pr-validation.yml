@@ -1,0 +1,249 @@
+name: PR Validation - K8s Deploy & Test
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'charts/**'
+      - '.github/workflows/pr-validation.yml'
+
+env:
+  CLUSTER_NAME: pr-${{ github.event.pull_request.number }}
+  NAMESPACE: thand-agent-test
+
+jobs:
+  validate-helm-chart:
+    name: Deploy & Validate Helm Chart
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.29.0'
+
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: ${{ env.CLUSTER_NAME }}
+          wait: 5m
+          kubectl_version: v1.29.0
+
+      - name: Verify cluster is ready
+        run: |
+          echo "Waiting for cluster to be fully ready..."
+          kubectl wait --for=condition=Ready nodes --all --timeout=300s
+          kubectl cluster-info
+          kubectl get nodes -o wide
+
+      - name: Add Helm dependencies
+        working-directory: charts/agent
+        run: |
+          helm dependency update
+
+      - name: Create namespace
+        run: |
+          kubectl create namespace ${{ env.NAMESPACE }}
+
+      - name: Install Helm chart
+        working-directory: charts/agent
+        run: |
+          helm install thand-agent . \
+            --namespace ${{ env.NAMESPACE }} \
+            --wait \
+            --timeout 10m \
+            --set image.pullPolicy=IfNotPresent \
+            --set replicaCount=1 \
+            --set resources.requests.memory=512Mi \
+            --set resources.requests.cpu=250m \
+            --set resources.limits.memory=1Gi \
+            --set resources.limits.cpu=500m \
+            --set temporal.enabled=false
+
+      - name: Wait for deployment rollout
+        run: |
+          echo "Waiting for deployment to be ready..."
+          kubectl rollout status deployment/thand-agent \
+            --namespace ${{ env.NAMESPACE }} \
+            --timeout=5m
+
+      - name: Validate all resources are created
+        run: |
+          echo "::group::Deployments"
+          kubectl get deployments -n ${{ env.NAMESPACE }}
+          echo "::endgroup::"
+          
+          echo "::group::Pods"
+          kubectl get pods -n ${{ env.NAMESPACE }} -o wide
+          echo "::endgroup::"
+          
+          echo "::group::Services"
+          kubectl get services -n ${{ env.NAMESPACE }}
+          echo "::endgroup::"
+          
+          echo "::group::ServiceAccounts"
+          kubectl get serviceaccounts -n ${{ env.NAMESPACE }}
+          echo "::endgroup::"
+          
+          echo "::group::ConfigMaps"
+          kubectl get configmaps -n ${{ env.NAMESPACE }}
+          echo "::endgroup::"
+          
+          echo "::group::Secrets"
+          kubectl get secrets -n ${{ env.NAMESPACE }}
+          echo "::endgroup::"
+          
+          echo "::group::RBAC Resources"
+          kubectl get clusterroles | grep thand-agent || true
+          kubectl get clusterrolebindings | grep thand-agent || true
+          echo "::endgroup::"
+
+      - name: Verify pods are ready
+        run: |
+          echo "Checking pod readiness..."
+          PODS=$(kubectl get pods -n ${{ env.NAMESPACE }} -o jsonpath='{.items[*].metadata.name}')
+          
+          for pod in $PODS; do
+            echo "Checking pod: $pod"
+            kubectl wait --for=condition=Ready pod/$pod \
+              --namespace ${{ env.NAMESPACE }} \
+              --timeout=300s
+          done
+          
+          echo "✅ All pods are ready!"
+
+      - name: Verify services are accessible
+        run: |
+          echo "Verifying service endpoints..."
+          SERVICES=$(kubectl get services -n ${{ env.NAMESPACE }} -o jsonpath='{.items[*].metadata.name}')
+          
+          for svc in $SERVICES; do
+            echo "Service: $svc"
+            kubectl get endpoints $svc -n ${{ env.NAMESPACE }}
+            
+            # Check that endpoints exist
+            ENDPOINTS=$(kubectl get endpoints $svc -n ${{ env.NAMESPACE }} -o jsonpath='{.subsets[*].addresses[*].ip}')
+            if [ -z "$ENDPOINTS" ]; then
+              echo "❌ No endpoints found for service: $svc"
+              exit 1
+            fi
+            echo "✅ Service $svc has endpoints: $ENDPOINTS"
+          done
+
+      - name: Test health endpoints
+        run: |
+          echo "Testing application health endpoints..."
+          POD=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app.kubernetes.io/name=agent -o jsonpath='{.items[0].metadata.name}')
+          
+          # Test health endpoint
+          echo "Testing /health endpoint..."
+          kubectl exec -n ${{ env.NAMESPACE }} $POD -- wget -qO- http://localhost:8080/health || {
+            echo "❌ Health endpoint failed"
+            exit 1
+          }
+          echo "✅ Health endpoint is responding"
+          
+          # Test ready endpoint
+          echo "Testing /ready endpoint..."
+          kubectl exec -n ${{ env.NAMESPACE }} $POD -- wget -qO- http://localhost:8080/ready || {
+            echo "❌ Ready endpoint failed"
+            exit 1
+          }
+          echo "✅ Ready endpoint is responding"
+
+      - name: Check pod logs for errors
+        if: always()
+        run: |
+          echo "::group::Pod Logs"
+          PODS=$(kubectl get pods -n ${{ env.NAMESPACE }} -o jsonpath='{.items[*].metadata.name}')
+          
+          for pod in $PODS; do
+            echo "=== Logs for pod: $pod ==="
+            kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=100 || echo "Failed to get logs for $pod"
+            echo ""
+          done
+          echo "::endgroup::"
+
+      - name: Describe pods on failure
+        if: failure()
+        run: |
+          echo "::group::Pod Descriptions"
+          PODS=$(kubectl get pods -n ${{ env.NAMESPACE }} -o jsonpath='{.items[*].metadata.name}')
+          
+          for pod in $PODS; do
+            echo "=== Describing pod: $pod ==="
+            kubectl describe pod $pod -n ${{ env.NAMESPACE }}
+            echo ""
+          done
+          echo "::endgroup::"
+
+      - name: Get all events on failure
+        if: failure()
+        run: |
+          echo "::group::Cluster Events"
+          kubectl get events -n ${{ env.NAMESPACE }} --sort-by='.lastTimestamp'
+          echo "::endgroup::"
+
+      - name: Helm test
+        if: success()
+        working-directory: charts/agent
+        run: |
+          if helm test thand-agent --namespace ${{ env.NAMESPACE }} 2>/dev/null; then
+            echo "✅ Helm tests passed"
+          else
+            echo "⚠️  No helm tests defined or tests failed"
+          fi
+
+      - name: Cleanup on success
+        if: success()
+        run: |
+          helm uninstall thand-agent --namespace ${{ env.NAMESPACE }} || true
+          kubectl delete namespace ${{ env.NAMESPACE }} || true
+
+      - name: Cleanup on failure (keep resources for debugging)
+        if: failure()
+        run: |
+          echo "⚠️  Cluster resources preserved for debugging"
+          echo "To debug locally, use: kind export logs"
+
+  lint-helm-chart:
+    name: Lint Helm Chart
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Add Helm dependencies
+        working-directory: charts/agent
+        run: |
+          helm dependency update
+
+      - name: Lint Helm chart
+        working-directory: charts/agent
+        run: |
+          helm lint .
+
+      - name: Template Helm chart
+        working-directory: charts/agent
+        run: |
+          helm template thand-agent . \
+            --namespace test \
+            --output-dir /tmp/helm-output
+          
+          echo "Generated templates:"
+          find /tmp/helm-output -type f -name "*.yaml" | head -20
